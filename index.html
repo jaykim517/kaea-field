@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>정기검사 현장판</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="현장판">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  html,body{margin:0;height:100%;background:#fff;overflow:hidden}
+  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;display:block}
+  #fallback{position:fixed;left:0;right:0;bottom:16px;text-align:center;font:14px -apple-system,system-ui,sans-serif;color:#555}
+  #fallback a{color:#1a5fb4}
+</style>
+</head>
+<body>
+<iframe id="app" title="정기검사 현장판"
+  allow="geolocation *; camera *; clipboard-read *; clipboard-write *; web-share *; fullscreen *"></iframe>
+<div id="fallback" hidden>화면이 안 뜨면 <a id="direct" target="_blank" rel="noopener">여기를 눌러 바로 여세요</a></div>
+<script>
+(function () {
+  var EXEC = "https://script.google.com/macros/s/AKfycbzpN858awR2jDgbvpp-ns2GkL4axmQK50pPxttLKH4ul_2XiXBGWQG9cyXHPrY-7OzWsw/exec";
+  var KEY = "hj.tok";
+  var OK = /^[A-Za-z0-9_\-.]{20,800}$/;
+  var standalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+
+  function get() { try { return localStorage.getItem(KEY) || ""; } catch (e) { return ""; } }
+  function put(v) { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch (e) {} }
+
+  // 주소에 ?k= 가 있으면(로그인 유지 주소) 저장
+  var q = new URLSearchParams(location.search).get("k") || "";
+  if (OK.test(q)) put(q);
+  var k = get();
+
+  var src = EXEC + "?w=1" + (k ? "&k=" + encodeURIComponent(k) : "");
+  document.getElementById("app").src = src;
+  document.getElementById("direct").href = EXEC + (k ? "?k=" + encodeURIComponent(k) : "");
+
+  // 앱 안에서 로그인/로그아웃하면 토큰을 받아 이 기기에 보관
+  window.addEventListener("message", function (e) {
+    var host = "";
+    try { host = new URL(e.origin).hostname; } catch (e1) { return; }
+    if (!/\.googleusercontent\.com$/.test(host)) return;
+    var d = e.data || {};
+    if (d.hj !== "tok") return;
+    var v = OK.test(d.v || "") ? d.v : "";
+    put(v);
+    // 사파리에서 [홈 화면에 추가]할 때 로그인이 같이 담기도록 주소에 반영 (홈 화면 앱 안에서는 그대로)
+    if (!standalone) {
+      try { history.replaceState(null, "", location.pathname + (v ? "?k=" + v : "")); } catch (e2) {}
+    }
+  });
+
+  // 10초 안에 화면이 안 뜨는 경우 대비
+  var loaded = false;
+  document.getElementById("app").addEventListener("load", function () { loaded = true; });
+  setTimeout(function () { if (!loaded) document.getElementById("fallback").hidden = false; }, 10000);
+})();
+</script>
+</body>
+</html>
